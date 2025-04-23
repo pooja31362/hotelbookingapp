@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block title %}Book Room{% endblock %}
+{% block content %}
+<h2>Book a Room</h2>
+<form method="post">
+    <input name="name" placeholder="Your Name" required>
+    <input name="email" placeholder="Your Email" required>
+    <input type="date" name="checkin" required>
+    <input type="date" name="checkout" required>
+    <button type="submit">Book</button>
+</form>
+{% endblock %}

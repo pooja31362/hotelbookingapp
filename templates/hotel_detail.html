@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block title %}{{ hotel[1] }}{% endblock %}
+{% block content %}
+<h2>{{ hotel[1] }}</h2>
+<p>{{ hotel[2] }}</p>
+<h3>Rooms</h3>
+{% for room in rooms %}
+<div>
+    <p>Type: {{ room[2] }} | Price: ₹{{ room[3] }}</p>
+    <a href="{{ url_for('book_room', room_id=room[0]) }}">Book Now</a>
+</div>
+{% endfor %}
+{% endblock %}

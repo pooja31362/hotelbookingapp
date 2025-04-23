@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block title %}All Hotels{% endblock %}
+{% block content %}
+<h2>Available Hotels</h2>
+{% for hotel in hotels %}
+<div>
+    <h3><a href="{{ url_for('hotel_detail', hotel_id=hotel[0]) }}">{{ hotel[1] }}</a></h3>
+    <p>{{ hotel[2] }}</p>
+</div>
+{% endfor %}
+{% endblock %}
