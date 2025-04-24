@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+{% block title %}Booking History{% endblock %}
+{% block content %}
+<h2>Your Booking History</h2>
+
+{% if history %}
+<table border="1" cellpadding="10" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Hotel Name</th>
+            <th>Location</th>
+            <th>Check-in</th>
+            <th>Check-out</th>
+            <th>Amount Paid (₹)</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in history %}
+        <tr>
+            <td>{{ row[1] }}</td>
+            <td>{{ row[2] }}</td>
+            <td>{{ row[3] }}</td>
+            <td>{{ row[4] }}</td>
+            <td>{{ row[5] }}</td>
+            <td>
+                {% set checkin_date = row[3] %}
+                {% if checkin_date > (today + timedelta(days=1)) %}
+                <form method="post" action="{{ url_for('cancel_booking', booking_id=row[0]) }}" style="display:inline;">
+                    <button type="submit" onclick="return confirm('Are you sure you want to cancel this booking?');">Cancel</button>
+                </form>
+                {% else %}
+                <span style="color: gray;">Not cancellable</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No bookings yet. Start planning your next trip!</p>
+{% endif %}
+
+{% endblock %}

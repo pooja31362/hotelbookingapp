@@ -9,6 +9,7 @@
         <h1>Hotel Booking App</h1>
         <nav>
             <a href="{{ url_for('index') }}">Home</a>
+            <a href="{{ url_for('booking_history') }}">My History</a>
             {% if 'user_id' in session %}
                 <span>Welcome, {{ session.username }}</span>
                 <a href="{{ url_for('logout') }}">Logout</a>

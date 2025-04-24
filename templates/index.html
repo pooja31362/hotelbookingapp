@@ -4,8 +4,8 @@
 <h2>Search Hotels</h2>
 <form method="get">
     <input type="text" name="search" placeholder="Hotel name or location">
-    <input type="date" name="checkin" required>
-    <input type="date" name="checkout" required>
+    <input type="date" name="checkin" id="checkin" required>
+    <input type="date" name="checkout" id="checkout" required>
     <input type="number" name="guests" placeholder="Guests" min="1" required>
     <input type="number" name="rooms" placeholder="Rooms" min="1" required>
 
@@ -25,6 +25,11 @@ Max: ₹<span id="max-price-display">100000</span>
 <input type="range" name="max_price" id="max_price" min="1000" max="10000" value="10000" step="100">
 
 <script>
+    // Set today's date as the minimum date for check-in and check-out
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById("checkin").setAttribute('min', today);
+    document.getElementById("checkout").setAttribute('min', today);
+
     const minSlider = document.getElementById('min_price');
     const maxSlider = document.getElementById('max_price');
     const minDisplay = document.getElementById('min-price-display');
@@ -43,15 +48,23 @@ Max: ₹<span id="max-price-display">100000</span>
         }
         maxDisplay.textContent = maxSlider.value;
     });
+
+    document.querySelector("form").addEventListener("submit", function(event) {
+        const checkin = new Date(document.querySelector("input[name='checkin']").value);
+        const checkout = new Date(document.querySelector("input[name='checkout']").value);
+        if (checkout <= checkin) {
+            alert("Check-out must be after check-in.");
+            event.preventDefault();
+        }
+    });
 </script>
 
+<label>Needed Access:</label><br>
+<input type="checkbox" name="features" value="food"> Food
+<input type="checkbox" name="features" value="wifi"> Wi-Fi
+<input type="checkbox" name="features" value="pool"> Pool
 
-    <label>Needed Access:</label><br>
-    <input type="checkbox" name="features" value="food"> Food
-    <input type="checkbox" name="features" value="wifi"> Wi-Fi
-    <input type="checkbox" name="features" value="pool"> Pool
-
-    <br><br><button type="submit">Search</button>
+<br><br><button type="submit">Search</button>
 </form>
 
 {% if hotels %}
@@ -64,15 +77,4 @@ Max: ₹<span id="max-price-display">100000</span>
 {% else %}
     <p>No hotels match your search criteria.</p>
 {% endif %}
-
-<script>
-document.querySelector("form").addEventListener("submit", function(event) {
-    const checkin = new Date(document.querySelector("input[name='checkin']").value);
-    const checkout = new Date(document.querySelector("input[name='checkout']").value);
-    if (checkout <= checkin) {
-        alert("Check-out must be after check-in.");
-        event.preventDefault();
-    }
-});
-</script>
 {% endblock %}

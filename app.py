@@ -4,8 +4,8 @@ from utils.pdf_generator import generate_invoice_pdf
 import os
 from flask import session
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import session
-
+from datetime import datetime,date, timedelta
+from flask import flash
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -79,9 +79,6 @@ def hotel_detail(hotel_id):
     conn.close()
     return render_template('hotel_detail.html', hotel=hotel, rooms=rooms)
 
-from datetime import datetime
-from flask import flash
-
 @app.route('/book/<int:room_id>', methods=['GET', 'POST'])
 def book_room(room_id):
     if 'user_id' not in session:
@@ -109,9 +106,9 @@ def book_room(room_id):
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO bookings (room_id, name, email, phone, guest_count, govt_id, checkin, checkout)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (room_id, name, email, phone, guest_count, govt_id, checkin, checkout))
+        INSERT INTO bookings (room_id, name, email, phone, guest_count, govt_id, checkin, checkout, user_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (room_id, name, email, phone, guest_count, govt_id, checkin, checkout, session['user_id']))
         
         booking_id = cursor.lastrowid
 
@@ -208,6 +205,74 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
+@app.route('/history')
+def booking_history():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
 
+    user_id = session['user_id']
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT b.id, h.name, h.location, b.checkin, b.checkout, r.price
+        FROM bookings b
+        JOIN rooms r ON b.room_id = r.id
+        JOIN hotels h ON r.hotel_id = h.id
+        WHERE b.user_id = %s
+        ORDER BY b.checkin DESC
+    """, (user_id,))
+    history = cursor.fetchall()
+    conn.close()
+
+    # ✅ Pass 'timedelta' to template
+    return render_template('history.html', history=history, today=date.today(), timedelta=timedelta)
+
+@app.route('/cancel/<int:booking_id>', methods=['POST'])
+def cancel_booking(booking_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT b.checkin, b.user_id, b.room_id
+        FROM bookings b
+        WHERE b.id = %s
+    """, (booking_id,))
+    booking = cursor.fetchone()
+
+    if not booking:
+        flash("Booking not found.")
+        conn.close()
+        return redirect(url_for('booking_history'))
+
+    checkin_date = booking[0]
+    booking_user_id = booking[1]
+    room_id = booking[2]
+
+    if booking_user_id != session['user_id']:
+        flash("You are not authorized to cancel this booking.")
+        conn.close()
+        return redirect(url_for('booking_history'))
+
+    if checkin_date - datetime.today().date() < timedelta(days=1):
+        flash("Cancellation not allowed within 24 hours of check-in.")
+        conn.close()
+        return redirect(url_for('booking_history'))
+
+    # Delete co-customers
+    cursor.execute("DELETE FROM co_customers WHERE booking_id = %s", (booking_id,))
+
+    # Delete booking
+    cursor.execute("DELETE FROM bookings WHERE id = %s", (booking_id,))
+
+    # Optionally set room available (if your logic marks it unavailable)
+    cursor.execute("UPDATE rooms SET available = TRUE WHERE id = %s", (room_id,))
+
+    conn.commit()
+    conn.close()
+
+    flash("Booking cancelled successfully.")
+    return redirect(url_for('booking_history'))
 if __name__ == '__main__':
     app.run(debug=True)
