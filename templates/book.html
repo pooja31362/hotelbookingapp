@@ -1,12 +1,36 @@
 {% extends "layout.html" %}
 {% block title %}Book Room{% endblock %}
 {% block content %}
-<h2>Book a Room</h2>
-<form method="post">
-    <input name="name" placeholder="Your Name" required>
-    <input name="email" placeholder="Your Email" required>
-    <input type="date" name="checkin" required>
-    <input type="date" name="checkout" required>
-    <button type="submit">Book</button>
-</form>
+  <h2>Guest Details</h2>
+  <form method="post">
+      <input name="name" placeholder="Your Name" required>
+      <input name="email" placeholder="Your Email" type="email" required>
+      <input name="phone" placeholder="Mobile Number" required>
+      <input name="govt_id" placeholder="Govt. ID (Aadhaar/PAN/License)" required>
+      {# optional hidden room_id: <input type="hidden" name="room_id" value="{{ room_id }}"> #}
+
+      <h3>Co-customers</h3>
+      <div id="co-customers-container"></div>
+
+      <button type="submit">Confirm Booking</button>
+  </form>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const guestCount = {{ session.get('guest_count', 1) }};
+    const container = document.getElementById('co-customers-container');
+
+    if (guestCount > 1) {
+      for (let i = 1; i < guestCount; i++) {
+        const div = document.createElement('div');
+        div.innerHTML = `
+          <p>Co-customer ${i}:</p>
+          <input name="co_name_${i}" placeholder="Name" required>
+          <input type="number" name="co_age_${i}" placeholder="Age" required>
+        `;
+        container.appendChild(div);
+      }
+    }
+  });
+  </script>
 {% endblock %}

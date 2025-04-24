@@ -5,7 +5,19 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <header><h1>Hotel Booking App</h1></header>
+    <header>
+        <h1>Hotel Booking App</h1>
+        <nav>
+            <a href="{{ url_for('index') }}">Home</a>
+            {% if 'user_id' in session %}
+                <span>Welcome, {{ session.username }}</span>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+                <a href="{{ url_for('signup') }}">Signup</a>
+            {% endif %}
+        </nav>
+    </header>    
     <main>{% block content %}{% endblock %}</main>
 </body>
 </html>

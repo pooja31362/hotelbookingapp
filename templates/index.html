@@ -1,11 +1,36 @@
 {% extends "layout.html" %}
 {% block title %}All Hotels{% endblock %}
 {% block content %}
+<h2>Search Hotels</h2>
+<form method="get">
+    <input type="text" name="search" placeholder="Hotel name or location">
+    <input type="date" name="checkin" required>
+    <input type="date" name="checkout" required>
+    <input type="number" name="guests" placeholder="Guests" min="1" required>
+    <input type="number" name="rooms" placeholder="Rooms" min="1" required>
+    <button type="submit">Search</button>
+</form>
+
 <h2>Available Hotels</h2>
-{% for hotel in hotels %}
-<div>
-    <h3><a href="{{ url_for('hotel_detail', hotel_id=hotel[0]) }}">{{ hotel[1] }}</a></h3>
-    <p>{{ hotel[2] }}</p>
-</div>
-{% endfor %}
+{% if hotels %}
+    {% for hotel in hotels %}
+    <div>
+        <h3><a href="{{ url_for('hotel_detail', hotel_id=hotel[0]) }}">{{ hotel[1] }}</a></h3>
+        <p>{{ hotel[2] }}</p>
+    </div>
+    {% endfor %}
+{% else %}
+    <p>No hotels match your search criteria.</p>
+{% endif %}
+
+<script>
+document.querySelector("form").addEventListener("submit", function(event) {
+    const checkin = new Date(document.querySelector("input[name='checkin']").value);
+    const checkout = new Date(document.querySelector("input[name='checkout']").value);
+    if (checkout <= checkin) {
+        alert("Check-out must be after check-in.");
+        event.preventDefault();
+    }
+});
+</script>
 {% endblock %}

@@ -2,18 +2,58 @@ from flask import Flask, render_template, request, redirect, url_for, send_file
 from models.db import get_connection
 from utils.pdf_generator import generate_invoice_pdf
 import os
+from flask import session
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask import session
+
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
 @app.route('/')
 def index():
+    search = request.args.get('search')
+    checkin = request.args.get('checkin')
+    checkout = request.args.get('checkout')
+    guests = request.args.get('guests', type=int)
+    rooms = request.args.get('rooms', type=int)
+
+    # ✅ Correctly indented block
+    if checkin and checkout:
+        session['checkin'] = checkin
+        session['checkout'] = checkout
+
+    if guests:
+        session['guest_count'] = guests
+
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM hotels")
+
+    query = "SELECT DISTINCT h.* FROM hotels h"
+    filters = []
+    params = []
+
+    if search:
+        filters.append("(h.name LIKE %s OR h.location LIKE %s)")
+        params.extend([f"%{search}%", f"%{search}%"])
+
+    if guests or rooms:
+        query += " JOIN rooms r ON h.id = r.hotel_id"
+        if guests:
+            filters.append("r.guest_capacity >= %s")
+            params.append(guests)
+        if rooms:
+            filters.append("r.available = TRUE")
+
+    if filters:
+        query += " WHERE " + " AND ".join(filters)
+
+    cursor.execute(query, tuple(params))
     hotels = cursor.fetchall()
     conn.close()
+
     return render_template('index.html', hotels=hotels)
+
 
 @app.route('/hotel/<int:hotel_id>')
 def hotel_detail(hotel_id):
@@ -26,22 +66,57 @@ def hotel_detail(hotel_id):
     conn.close()
     return render_template('hotel_detail.html', hotel=hotel, rooms=rooms)
 
+from datetime import datetime
+from flask import flash
+
 @app.route('/book/<int:room_id>', methods=['GET', 'POST'])
 def book_room(room_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email']
-        checkin = request.form['checkin']
-        checkout = request.form['checkout']
+        phone = request.form['phone']
+        govt_id = request.form['govt_id']
+
+        checkin = session.get('checkin')
+        checkout = session.get('checkout')
+        guest_count = session.get('guest_count', 1)
+
+        # ✅ Date format check
+        try:
+            checkin_date = datetime.strptime(checkin, "%Y-%m-%d")
+            checkout_date = datetime.strptime(checkout, "%Y-%m-%d")
+            if checkout_date <= checkin_date:
+                return "Error: Check-out date must be after check-in date.", 400
+        except Exception as e:
+            return "Error: Invalid check-in/check-out format", 400
+
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO bookings (room_id, name, email, checkin, checkout) VALUES (%s, %s, %s, %s, %s)",
-                       (room_id, name, email, checkin, checkout))
+        cursor.execute("""
+            INSERT INTO bookings (room_id, name, email, phone, guest_count, govt_id, checkin, checkout)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (room_id, name, email, phone, guest_count, govt_id, checkin, checkout))
+        
         booking_id = cursor.lastrowid
+
+        # Save co-customers
+        for i in range(1, int(guest_count)):
+            co_name = request.form.get(f'co_name_{i}')
+            co_age = request.form.get(f'co_age_{i}')
+            if co_name and co_age:
+                cursor.execute("INSERT INTO co_customers (booking_id, name, age) VALUES (%s, %s, %s)",
+                               (booking_id, co_name, co_age))
+
         conn.commit()
         conn.close()
+
         return redirect(url_for('invoice', booking_id=booking_id))
+
     return render_template('book.html', room_id=room_id)
+
 
 @app.route('/invoice/<int:booking_id>')
 def invoice(booking_id):
@@ -49,7 +124,8 @@ def invoice(booking_id):
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT b.id, b.name, b.email, b.checkin, b.checkout, r.price, h.name
+            SELECT b.id, b.name, b.email, b.checkin, b.checkout, r.price,
+                   h.name, b.phone,b.guest_count
             FROM bookings b
             JOIN rooms r ON b.room_id = r.id
             JOIN hotels h ON r.hotel_id = h.id
@@ -59,19 +135,66 @@ def invoice(booking_id):
         conn.close()
 
         if not booking:
+            print(f"No booking found for ID {booking_id}")
             return "Booking not found", 404
+
+        print("Fetched Booking Info:", booking)
 
         # Generate the invoice PDF
         pdf_path = generate_invoice_pdf(booking, booking_id)
+
         if not pdf_path or not os.path.exists(pdf_path):
-            print(f"Error: PDF generation failed for booking ID {booking_id}")
-            return "Error generating the invoice.", 500
-        
+            print(f"PDF not created or found at path: {pdf_path}")
+            return "Error generating the invoice.", 500  #-----------------I AM GETTING STUCKED HERE_------# 
+
+        print(f"Sending invoice file: {pdf_path}")
         return send_file(pdf_path, as_attachment=True)
-    
+
     except Exception as e:
         print(f"Error generating invoice: {e}")
-        return "Error generating the invoice, please try again later.", 500
+        return f"Error generating the invoice: {e}", 500 
+
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = generate_password_hash(request.form['password'])
+
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", 
+                       (username, email, password))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('login'))
+    return render_template('signup.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, username, password FROM users WHERE email = %s", (email,))
+        user = cursor.fetchone()
+        conn.close()
+
+        if user and check_password_hash(user[2], password):
+            session['user_id'] = user[0]
+            session['username'] = user[1]
+            return redirect(url_for('index'))
+        return "Invalid credentials"
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
