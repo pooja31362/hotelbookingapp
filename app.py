@@ -17,33 +17,45 @@ def index():
     checkout = request.args.get('checkout')
     guests = request.args.get('guests', type=int)
     rooms = request.args.get('rooms', type=int)
+    room_type = request.args.get('room_temp')
+    min_price = request.args.get('min_price', type=float)
+    max_price = request.args.get('max_price', type=float)
+    features = request.args.getlist('features')
 
-    # ✅ Correctly indented block
     if checkin and checkout:
         session['checkin'] = checkin
         session['checkout'] = checkout
-
     if guests:
         session['guest_count'] = guests
 
     conn = get_connection()
     cursor = conn.cursor()
 
-    query = "SELECT DISTINCT h.* FROM hotels h"
+    query = "SELECT DISTINCT h.* FROM hotels h JOIN rooms r ON h.id = r.hotel_id"
     filters = []
     params = []
 
     if search:
         filters.append("(h.name LIKE %s OR h.location LIKE %s)")
         params.extend([f"%{search}%", f"%{search}%"])
-
-    if guests or rooms:
-        query += " JOIN rooms r ON h.id = r.hotel_id"
-        if guests:
-            filters.append("r.guest_capacity >= %s")
-            params.append(guests)
-        if rooms:
-            filters.append("r.available = TRUE")
+    if guests:
+        filters.append("r.guest_capacity >= %s")
+        params.append(guests)
+    if rooms:
+        filters.append("r.available = TRUE")
+    if room_type:
+        filters.append("r.room_type = %s")
+        params.append(room_type)
+    if min_price:
+        filters.append("r.price >= %s")
+        params.append(min_price)
+    if max_price:
+        filters.append("r.price <= %s")
+        params.append(max_price)
+    if features:
+        for feature in features:
+            filters.append("r.features LIKE %s")
+            params.append(f"%{feature}%")
 
     if filters:
         query += " WHERE " + " AND ".join(filters)
@@ -53,6 +65,7 @@ def index():
     conn.close()
 
     return render_template('index.html', hotels=hotels)
+
 
 
 @app.route('/hotel/<int:hotel_id>')

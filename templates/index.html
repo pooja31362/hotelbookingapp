@@ -8,10 +8,52 @@
     <input type="date" name="checkout" required>
     <input type="number" name="guests" placeholder="Guests" min="1" required>
     <input type="number" name="rooms" placeholder="Rooms" min="1" required>
-    <button type="submit">Search</button>
+
+    <label>Room Type:</label>
+    <select name="room_type">
+        <option value="">Any</option>
+        <option value="AC">AC</option>
+        <option value="NON-AC">Non-AC</option>
+    </select>
+
+    <label>Price Range:</label><br>
+Min: ₹<span id="min-price-display">1000</span>
+<input type="range" name="min_price" id="min_price" min="1000" max="10000" value="1000" step="100">
+
+<br>
+Max: ₹<span id="max-price-display">100000</span>
+<input type="range" name="max_price" id="max_price" min="1000" max="10000" value="10000" step="100">
+
+<script>
+    const minSlider = document.getElementById('min_price');
+    const maxSlider = document.getElementById('max_price');
+    const minDisplay = document.getElementById('min-price-display');
+    const maxDisplay = document.getElementById('max-price-display');
+
+    minSlider.addEventListener('input', () => {
+        if (parseInt(minSlider.value) > parseInt(maxSlider.value)) {
+            minSlider.value = maxSlider.value;
+        }
+        minDisplay.textContent = minSlider.value;
+    });
+
+    maxSlider.addEventListener('input', () => {
+        if (parseInt(maxSlider.value) < parseInt(minSlider.value)) {
+            maxSlider.value = minSlider.value;
+        }
+        maxDisplay.textContent = maxSlider.value;
+    });
+</script>
+
+
+    <label>Needed Access:</label><br>
+    <input type="checkbox" name="features" value="food"> Food
+    <input type="checkbox" name="features" value="wifi"> Wi-Fi
+    <input type="checkbox" name="features" value="pool"> Pool
+
+    <br><br><button type="submit">Search</button>
 </form>
 
-<h2>Available Hotels</h2>
 {% if hotels %}
     {% for hotel in hotels %}
     <div>
