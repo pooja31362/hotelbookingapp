@@ -7,8 +7,7 @@ def get_connection():
             host=DB_CONFIG['host'],
             user=DB_CONFIG['user'],
             password=DB_CONFIG['password'],
-            db=DB_CONFIG['db'],
-            port=DB_CONFIG['port']
+            db=DB_CONFIG['db']
         )
         return connection
     except Exception as e:
@@ -20,7 +19,6 @@ DB_CONFIG = {
     'host': 'hoteldb.cf6me2usaddu.ap-south-1.rds.amazonaws.com',
     'user': 'admin',
     'password': 'Muthupattan1403',
-    'db': 'hoteldb',
-    'port':'3306'
+    'db': 'hoteldb'
 }
 
