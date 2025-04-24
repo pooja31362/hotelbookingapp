@@ -8,6 +8,7 @@ def get_connection():
             user=DB_CONFIG['user'],
             password=DB_CONFIG['password'],
             db=DB_CONFIG['db']
+            port=DB_CONFIG['3306']
         )
         return connection
     except Exception as e:
