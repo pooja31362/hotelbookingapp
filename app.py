@@ -6,6 +6,7 @@ from flask import session
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime,date, timedelta
 from flask import flash
+from flask import flash, redirect, url_for
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -39,7 +40,11 @@ def index():
         filters.append("(h.name LIKE %s OR h.location LIKE %s)")
         params.extend([f"%{search}%", f"%{search}%"])
     if guests:
+        if guests > 5:
+            flash("Maximum 5 guests are allowed per room.")
+            return redirect(url_for('index'))
         filters.append("r.guest_capacity >= %s")
+        filters.append("r.guest_capacity <= 5")
         params.append(guests)
     if rooms:
         filters.append("r.available = TRUE")
@@ -65,7 +70,6 @@ def index():
     conn.close()
 
     return render_template('index.html', hotels=hotels)
-
 
 
 @app.route('/hotel/<int:hotel_id>')
