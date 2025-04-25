@@ -1,67 +1,84 @@
 {% extends "layout.html" %}
 {% block title %}All Hotels{% endblock %}
-{% block content %}
 
-<section>
-    <h2>Find the Perfect Stay</h2>
-    <form method="get">
-        <input type="text" name="search" placeholder="🔍 Hotel name or location">
-        <input type="date" name="checkin" id="checkin" required>
-        <input type="date" name="checkout" id="checkout" required>
-        <input type="number" name="guests" placeholder="👥 Guests" min="1" required>
-        <input type="number" name="rooms" placeholder="🛏️ Rooms" min="1" required>
+{% block heroform %}
+<form method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <input type="text" name="search" placeholder="🔍 Hotel name or location" class="p-3 border rounded-md" />
 
-        <label>Room Type:</label>
-        <select name="room_type">
+    <input type="date" name="checkin" id="checkin" placeholder="dd-mm-yyyy" required class="p-3 border rounded-md" />
+    <input type="date" name="checkout" id="checkout" placeholder="dd-mm-yyyy"required class="p-3 border rounded-md" />
+
+    <input type="number" name="guests" placeholder="👥 Guests" min="1" required class="p-3 border rounded-md" />
+    <input type="number" name="rooms" placeholder="🛏️ Rooms" min="1" required class="p-3 border rounded-md" />
+
+    <div>
+        <label class="block font-medium">Room Type:</label>
+        <select name="room_type" class="w-full p-2 border rounded-md">
             <option value="">Any</option>
             <option value="AC">AC</option>
             <option value="NON-AC">Non-AC</option>
         </select>
+    </div>
 
-        <label>Price Range:</label>
-        Min: ₹<span id="min-price-display">1000</span>
-        <input type="range" name="min_price" id="min_price" min="1000" max="10000" value="1000" step="100">
+    <div class="md:col-span-2">
+        <label class="block font-medium">Price Range:</label>
+        <div class="flex items-center gap-4">
+            <span>Min: ₹<span id="min-price-display">1000</span></span>
+            <input type="range" name="min_price" id="min_price" min="1000" max="10000" value="1000" step="100" class="w-full" />
+        </div>
+        <div class="flex items-center gap-4 mt-2">
+            <span>Max: ₹<span id="max-price-display">10000</span></span>
+            <input type="range" name="max_price" id="max_price" min="1000" max="10000" value="10000" step="100" class="w-full" />
+        </div>
+    </div>
 
-        Max: ₹<span id="max-price-display">10000</span>
-        <input type="range" name="max_price" id="max_price" min="1000" max="10000" value="10000" step="100">
+    <div class="md:col-span-2">
+        <label class="block font-medium">Needed Access:</label>
+        <div class="flex flex-wrap gap-4 mt-1">
+            <label><input type="checkbox" name="features" value="food" /> Food</label>
+            <label><input type="checkbox" name="features" value="wifi" /> Wi-Fi</label>
+            <label><input type="checkbox" name="features" value="pool" /> Pool</label>
+        </div>
+    </div>
 
-        <label>Needed Access:</label>
-        <input type="checkbox" name="features" value="food"> Food
-        <input type="checkbox" name="features" value="wifi"> Wi-Fi
-        <input type="checkbox" name="features" value="pool"> Pool
+    <div class="md:col-span-3 text-center">
+        <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">🔎 Search</button>
+    </div>
+</form>
+{% endblock %}
 
-        <br><br><button type="submit">🔎 Search</button>
-    </form>
-</section>
-
-
-    <section>
-        <h2>Available Hotels</h2>
-        {% if hotels %}
+{% block content %}
+<section class="px-4 md:px-10">
+    <h2 class="text-2xl font-bold mb-4">Available Hotels</h2>
+    {% if hotels %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for hotel in hotels %}
-            <div class="hotel-card">
+            <div class="bg-white shadow-md rounded-lg overflow-hidden">
                 <img src="{{ url_for('static', filename='images/' ~ hotel[1] ~ '.png') }}"
                      alt="{{ hotel[1] }}"
-                     onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/default.png') }}';">
-                <div class="hotel-info">
-                    <h3><a href="{{ url_for('hotel_detail', hotel_id=hotel[0]) }}">{{ hotel[1] }}</a></h3>
-                    <p>{{ hotel[2] }}</p>
+                     onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/default.png') }}';"
+                     class="w-full h-48 object-cover">
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold">
+                        <a href="{{ url_for('hotel_detail', hotel_id=hotel[0]) }}" class="text-blue-600 hover:underline">
+                            {{ hotel[1] }}
+                        </a>
+                    </h3>
+                    <p class="text-gray-600">{{ hotel[2] }}</p>
                 </div>
             </div>
             {% endfor %}
-        {% else %}
-            <p>No hotels match your search criteria.</p>
-        {% endif %}
-    </section>
-
+        </div>
+    {% else %}
+        <p class="text-gray-500">No hotels match your search criteria.</p>
+    {% endif %}
+</section>
 
 <script>
-    // Block past dates for check-in and check-out
     const today = new Date().toISOString().split('T')[0];
     document.getElementById("checkin").setAttribute('min', today);
     document.getElementById("checkout").setAttribute('min', today);
 
-    // Update displayed price values
     const minSlider = document.getElementById('min_price');
     const maxSlider = document.getElementById('max_price');
     const minDisplay = document.getElementById('min-price-display');
@@ -81,7 +98,6 @@
         maxDisplay.textContent = maxSlider.value;
     });
 
-    // Check-out should be after check-in
     document.querySelector("form").addEventListener("submit", function(event) {
         const checkin = new Date(document.querySelector("input[name='checkin']").value);
         const checkout = new Date(document.querySelector("input[name='checkout']").value);
@@ -91,5 +107,4 @@
         }
     });
 </script>
-
 {% endblock %}

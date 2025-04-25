@@ -1,24 +1,39 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html> 
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>{% block title %}Hotel Booking{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <header>
-        <h1>Hotel Booking App</h1>
-        <nav>
-            <a href="{{ url_for('index') }}">Home</a>
-            <a href="{{ url_for('booking_history') }}">My History</a>
+<body class="font-nunito bg-gray-100 text-gray-900">
+
+    <header class="bg-white shadow-md px-4 py-3 flex items-center justify-between">
+        <center><div class="text-xl font-bold text-blue-600">Hotel Booking App</div></center>
+        <nav class="space-x-4">
+            <a href="{{ url_for('index') }}" class="hover:text-blue-600">Home</a>
+            <a href="{{ url_for('booking_history') }}" class="hover:text-blue-600">My History</a>
             {% if 'user_id' in session %}
-                <span>Welcome, {{ session.username }}</span>
-                <a href="{{ url_for('logout') }}">Logout</a>
+                <span class="text-sm text-gray-700">Welcome, {{ session.username }}</span>
+                <a href="{{ url_for('logout') }}" class="hover:text-blue-600">Logout</a>
             {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
-                <a href="{{ url_for('signup') }}">Signup</a>
+                <a href="{{ url_for('login') }}" class="hover:text-blue-600">Login</a>
+                <a href="{{ url_for('signup') }}" class="hover:text-blue-600">Signup</a>
             {% endif %}
         </nav>
-    </header>    
-    <main>{% block content %}{% endblock %}</main>
+    </header>
+
+    <!-- Hero section with background image -->
+    <div class="relative h-[450px] bg-cover bg-center flex items-center justify-center text-white"
+         style="background-image: url('{{ url_for('static', filename='images/hotel1.png') }}');">
+        <div class="bg-black bg-opacity-50 p-8 rounded-lg max-w-4xl w-full mx-4">
+            {% block heroform %}{% endblock %}
+        </div>
+    </div>
+
+    <main class="mt-10">
+        {% block content %}{% endblock %}
+    </main>
 </body>
 </html>
