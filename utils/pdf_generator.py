@@ -14,7 +14,7 @@ def generate_invoice_pdf(booking, booking_id):
         pdf.ln(10)
         pdf.set_text_color(0, 0, 0)
         pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, txt=f"Booking ID: {booking_id}", ln=True)
+        pdf.cell(200, 10, txt=f"Room No: {booking_id}", ln=True)
         pdf.cell(200, 10, txt=f"Customer: {booking[1]}", ln=True)  # booking[1] = name
         pdf.cell(200, 10, txt=f"Hotel: {booking[6]}", ln=True)  # booking[6] = hotel name
         pdf.cell(200, 10, txt=f"Email: {booking[2]}", ln=True)
