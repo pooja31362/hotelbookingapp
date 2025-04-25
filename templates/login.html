@@ -1,10 +1,104 @@
 {% extends "layout.html" %}
 {% block title %}Login{% endblock %}
+
 {% block content %}
-<h2>Login</h2>
-<form method="post">
-    <input name="email" placeholder="Email" required>
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+
+  .auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: url("{{ url_for('static', filename='login-bg.png') }}") no-repeat center center;
+    background-size: cover;
+    position: relative;
+  }
+
+  .auth-container::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5); /* Dark overlay with transparency */
+    z-index: 1;
+  }
+
+  .auth-form {
+    position: relative;
+    z-index: 2;
+    background: transparent;
+    padding: 2rem;
+    border-radius: 1rem;
+    color: #fff;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    backdrop-filter: blur(5px); /* Optional: glassmorphism effect */
+  }
+
+  .auth-form h2 {
+    margin-bottom: 1.5rem;
+    color: #fff;
+  }
+
+  .auth-form input {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    margin: 0.75rem 0;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  .auth-form input::placeholder {
+    color: #eee;
+  }
+
+  .auth-form button {
+    width: 100%;
+    padding: 1rem;
+    background-color: #667eea;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 0.5rem;
+    margin-top: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  .auth-form button:hover {
+    background-color: #5a67d8;
+  }
+
+  .auth-form p {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .auth-form a {
+    color: #c3bffb;
+    text-decoration: none;
+  }
+
+  .auth-form a:hover {
+    text-decoration: underline;
+  }
+</style>
+
+<div class="auth-container">
+  <form method="post" class="auth-form">
+    <h2>Login</h2>
+    <input type="email" name="email" placeholder="Email" required>
     <input type="password" name="password" placeholder="Password" required>
     <button type="submit">Login</button>
-</form>
+    <p>Don't have an account? <a href="{{ url_for('signup') }}">Register</a></p>
+  </form>
+</div>
 {% endblock %}

@@ -1,44 +1,61 @@
 {% extends "layout.html" %}
-{% block title %}Booking History{% endblock %}
+{% block title %}My Booking History{% endblock %}
+
 {% block content %}
-<h2>Your Booking History</h2>
+<section class="min-h-screen bg-gradient-to-br from-blue-900 to-blue-700 py-12 px-4 flex justify-center items-start">
+  <div class="w-full max-w-7xl space-y-10">
 
-{% if history %}
-<table border="1" cellpadding="10" cellspacing="0">
-    <thead>
-        <tr>
-            <th>Hotel Name</th>
-            <th>Location</th>
-            <th>Check-in</th>
-            <th>Check-out</th>
-            <th>Amount Paid (₹)</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for row in history %}
-        <tr>
-            <td>{{ row[1] }}</td>
-            <td>{{ row[2] }}</td>
-            <td>{{ row[3] }}</td>
-            <td>{{ row[4] }}</td>
-            <td>{{ row[5] }}</td>
-            <td>
-                {% set checkin_date = row[3] %}
-                {% if checkin_date > (today + timedelta(days=1)) %}
-                <form method="post" action="{{ url_for('cancel_booking', booking_id=row[0]) }}" style="display:inline;">
-                    <button type="submit" onclick="return confirm('Are you sure you want to cancel this booking?');">Cancel</button>
-                </form>
-                {% else %}
-                <span style="color: gray;">Not cancellable</span>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>No bookings yet. Start planning your next trip!</p>
-{% endif %}
+    <h2 class="text-3xl font-bold text-white text-center mb-8">Your Booking History</h2>
 
+    {% if history %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      {% for booking in history %}
+      <div class="bg-blue-800 bg-opacity-60 backdrop-blur-md rounded-3xl p-6 text-white shadow-2xl hover:shadow-blue-500 transition-all space-y-4">
+
+        <!-- Hotel Info -->
+        <div class="mb-4">
+          <h3 class="text-xl font-bold text-cyan-300">{{ booking[1] }}</h3> {# Hotel Name #}
+          <p class="text-sm text-blue-200">{{ booking[2] }}</p> {# Location #}
+        </div>
+
+        <!-- Booking Details -->
+        <div class="space-y-2 text-sm text-blue-100">
+          <p><span class="font-semibold text-cyan-400">Check-in:</span> {{ booking[3] }}</p>
+          <p><span class="font-semibold text-cyan-400">Check-out:</span> {{ booking[4] }}</p>
+          <p><span class="font-semibold text-green-400">Price:</span> ₹{{ booking[5] }}</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-between items-center pt-4">
+          
+          <!-- Cancel Button -->
+          <form method="POST" action="{{ url_for('cancel_booking', booking_id=booking[0]) }}">
+            {% set checkin_date = booking[3] %}
+            {% if (checkin_date - today).days >= 1 %}
+            <button type="submit" class="bg-red-400 hover:bg-red-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all">
+              Cancel
+            </button>
+            {% else %}
+            <span class="text-xs text-blue-300 italic">Cancellation Closed</span>
+            {% endif %}
+          </form>
+
+          <!-- Invoice Download -->
+          <a href="{{ url_for('invoice', booking_id=booking[0]) }}" target="_blank"
+             class="bg-cyan-400 hover:bg-cyan-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all ml-2">
+            Download
+          </a>
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="text-center pt-20">
+      <p class="text-white text-lg">You have no bookings yet. Start exploring! 🌍</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
 {% endblock %}

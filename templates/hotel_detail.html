@@ -1,13 +1,121 @@
 {% extends "layout.html" %}
 {% block title %}{{ hotel[1] }}{% endblock %}
+
 {% block content %}
-<h2>{{ hotel[1] }}</h2>
-<p>{{ hotel[2] }}</p>
-<h3>Rooms</h3>
-{% for room in rooms %}
-<div>
-    <p>Type: {{ room[2] }} | Price: ₹{{ room[3] }}</p>
-    <a href="{{ url_for('book_room', room_id=room[0]) }}">Book Now</a>
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #5b86e5, #36d1dc);
+    color: #fff;
+  }
+
+  .hero-image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 2rem;
+    background: linear-gradient(to right, #1e3c72, #2a5298); /* Fallback if image not available */
+  }
+
+  .hotel-card-overlay {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2.5rem;
+    border-radius: 1.5rem;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    max-width: 800px;
+    width: 100%;
+    z-index: 2;
+  }
+
+  .hotel-card h2 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: #ffffff;
+  }
+
+  .hotel-card p {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+    color: #d6e0ff;
+  }
+
+  .hotel-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1.2rem;
+    color: #c2d6ff;
+  }
+
+  .room-box {
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 1rem;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .room-box p {
+    margin: 0;
+    color: #e0ecff;
+    font-weight: 400;
+    font-size: 1rem;
+  }
+
+  .book-button {
+    background: #36d1dc;
+    background: linear-gradient(to right, #5b86e5, #36d1dc);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 0.6rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: 0.3s ease;
+    box-shadow: 0 0 0 rgba(255,255,255,0);
+  }
+
+  .book-button:hover {
+    background: #4a75d0;
+    box-shadow: 0 8px 16px rgba(54, 209, 220, 0.4);
+  }
+
+  @media screen and (max-width: 600px) {
+    .hotel-card-overlay {
+      padding: 1.5rem;
+    }
+
+    .room-box {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .book-button {
+      align-self: flex-end;
+    }
+  }
+</style>
+
+<div class="hero-image">
+  <div class="hotel-card-overlay">
+    <div class="hotel-card">
+      <h2>{{ hotel[1] }}</h2>
+      <p>{{ hotel[2] }}</p>
+      <h3>Rooms</h3>
+      {% for room in rooms %}
+      <div class="room-box">
+        <p><strong>Type:</strong> {{ room[2] }} | <strong>Price:</strong> ₹{{ room[3] }}</p>
+        <a href="{{ url_for('book_room', room_id=room[0]) }}" class="book-button">Book Now</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
 </div>
-{% endfor %}
 {% endblock %}

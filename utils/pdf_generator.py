@@ -7,10 +7,13 @@ def generate_invoice_pdf(booking, booking_id):
         pdf = FPDF()
         pdf.add_page()
 
+
         pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, txt="Hotel Booking Invoice", ln=True, align="C")
+        pdf.cell(200, 10, txt="Hotel Booking Invoice", ln=True, align="C",)
 
         pdf.ln(10)
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font("Arial", size=12)
         pdf.cell(200, 10, txt=f"Booking ID: {booking_id}", ln=True)
         pdf.cell(200, 10, txt=f"Customer: {booking[1]}", ln=True)  # booking[1] = name
         pdf.cell(200, 10, txt=f"Hotel: {booking[6]}", ln=True)  # booking[6] = hotel name
@@ -19,7 +22,9 @@ def generate_invoice_pdf(booking, booking_id):
         pdf.cell(200, 10, txt=f"Guests: {booking[8]}", ln=True)
         pdf.cell(200, 10, txt=f"Check-in: {booking[3]}", ln=True)  # booking[3] = checkin
         pdf.cell(200, 10, txt=f"Check-out: {booking[4]}", ln=True)  # booking[4] = checkout
-        pdf.cell(200, 10, txt=f"Price: ${booking[5]}", ln=True)  # booking[5] = price
+        pdf.ln(10)
+        pdf.ln(10)
+        pdf.cell(200, 10, txt=f"Total Price: ${booking[5]}", ln=True)  # booking[5] = price
 
         # Save the PDF to a file
         pdf_dir = "invoices"
@@ -39,3 +44,6 @@ def generate_invoice_pdf(booking, booking_id):
     except Exception as e:
         print(f"Error in generating PDF for booking ID {booking_id}: {e}")
         return None
+
+
+

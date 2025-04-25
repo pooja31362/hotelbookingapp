@@ -3,19 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}Hotel Booking{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Tailwind + Custom Font -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Page-specific styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <style>
+      body {
+        font-family: 'Poppins', sans-serif;
+      }
+    </style>
 </head>
-<body class="font-nunito bg-gray-100 text-gray-900">
+<body class="min-h-screen text-white">
 
-    <header class="bg-white shadow-md px-4 py-3 flex items-center justify-between">
-        <center><div class="text-xl font-bold text-blue-600">Hotel Booking App</div></center>
-        <nav class="space-x-4">
+    <!-- Header -->
+    <header class="bg-white/90 backdrop-blur sticky top-0 z-50 shadow-md px-4 py-3 flex items-center justify-between">
+        <div class="text-xl font-bold text-blue-600">Hotel Booking App</div>
+        <nav class="space-x-4 text-gray-800">
             <a href="{{ url_for('index') }}" class="hover:text-blue-600">Home</a>
             <a href="{{ url_for('booking_history') }}" class="hover:text-blue-600">My History</a>
             {% if 'user_id' in session %}
-                <span class="text-sm text-gray-700">Welcome, {{ session.username }}</span>
+                <span class="text-sm text-gray-600">Welcome, {{ session.username }}</span>
                 <a href="{{ url_for('logout') }}" class="hover:text-blue-600">Logout</a>
             {% else %}
                 <a href="{{ url_for('login') }}" class="hover:text-blue-600">Login</a>
@@ -24,15 +36,11 @@
         </nav>
     </header>
 
-    <!-- Hero section with background image -->
-    <div class="relative h-[450px] bg-cover bg-center flex items-center justify-center text-white"
-         style="background-image: url('{{ url_for('static', filename='images/hotel1.png') }}');">
-        <div class="bg-black bg-opacity-50 p-8 rounded-lg max-w-4xl w-full mx-4">
-            {% block heroform %}{% endblock %}
-        </div>
-    </div>
+    <!-- Optional Hero -->
+    {% block heroform %}{% endblock %}
 
-    <main class="mt-10">
+    <!-- Main Page Content -->
+    <main class="w-full">
         {% block content %}{% endblock %}
     </main>
 </body>

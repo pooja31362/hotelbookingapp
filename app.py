@@ -137,36 +137,49 @@ def invoice(booking_id):
     try:
         conn = get_connection()
         cursor = conn.cursor()
+
         cursor.execute("""
-            SELECT b.id, b.name, b.email, b.checkin, b.checkout, r.price,
-                   h.name, b.phone,b.guest_count
+            SELECT 
+                b.id,          -- 0: booking ID
+                b.name,        -- 1: customer name
+                b.email,       -- 2
+                b.checkin,     -- 3
+                b.checkout,    -- 4
+                r.price,       -- 5
+                h.name,        -- 6: hotel name
+                b.phone,       -- 7
+                b.guest_count, -- 8
+                b.govt_id      -- 9
             FROM bookings b
             JOIN rooms r ON b.room_id = r.id
             JOIN hotels h ON r.hotel_id = h.id
             WHERE b.id = %s
         """, (booking_id,))
+        
         booking = cursor.fetchone()
         conn.close()
 
-        if not booking:
-            print(f"No booking found for ID {booking_id}")
-            return "Booking not found", 404
+        if not booking or len(booking) < 10:
+            print(f"No booking found or incomplete for ID {booking_id}")
+            return "Booking not found or incomplete", 404
 
-        print("Fetched Booking Info:", booking)
+        # Log booking data for debugging
+        print("Fetched booking info:", booking)
 
-        # Generate the invoice PDF
+        # Generate PDF
+        from utils.pdf_generator import generate_invoice_pdf  # Make sure this import works
         pdf_path = generate_invoice_pdf(booking, booking_id)
 
         if not pdf_path or not os.path.exists(pdf_path):
-            print(f"PDF not created or found at path: {pdf_path}")
-            return "Error generating the invoice.", 500  #-----------------I AM GETTING STUCKED HERE_------# 
+            print(f"PDF not created at path: {pdf_path}")
+            return "Error generating the invoice.", 500
 
-        print(f"Sending invoice file: {pdf_path}")
+        print(f"Sending PDF invoice: {pdf_path}")
         return send_file(pdf_path, as_attachment=True)
 
     except Exception as e:
-        print(f"Error generating invoice: {e}")
-        return f"Error generating the invoice: {e}", 500 
+        print(f"Error generating invoice route: {e}")
+        return f"Error generating the invoice: {e}", 500
 
 
 @app.route('/signup', methods=['GET', 'POST'])

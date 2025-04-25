@@ -2,78 +2,110 @@
 {% block title %}All Hotels{% endblock %}
 
 {% block heroform %}
-<form method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    <input type="text" name="search" placeholder="🔍 Hotel name or location" class="p-3 border rounded-md" />
+<!-- Search/Filter Form Section -->
+<div class="flex justify-center w-full bg-gradient-to-br from-blue-900 to-blue-700 py-10 px-4">
+    <form method="get" class="flex flex-col lg:flex-row gap-6 w-full max-w-7xl p-6 rounded-3xl backdrop-blur-md bg-white/10 shadow-2xl text-white">
 
-    <input type="date" name="checkin" id="checkin" placeholder="dd-mm-yyyy" required class="p-3 border rounded-md" />
-    <input type="date" name="checkout" id="checkout" placeholder="dd-mm-yyyy"required class="p-3 border rounded-md" />
+        <!-- Filters -->
+        <div class="w-full lg:w-1/4 space-y-6">
+            <h2 class="text-lg font-bold text-white">Filters</h2>
 
-    <input type="number" name="guests" placeholder="👥 Guests" min="1" required class="p-3 border rounded-md" />
-    <input type="number" name="rooms" placeholder="🛏️ Rooms" min="1" required class="p-3 border rounded-md" />
+            <!-- Price Range -->
+            <div>
+                <label class="block text-sm font-semibold text-white mb-1">Price Range</label>
+                <div class="text-xs text-white mb-1">Min: ₹<span id="min-price-display">1000</span></div>
+                <input type="range" name="min_price" id="min_price" min="1000" max="10000" value="1000" step="100" class="w-full accent-cyan-400">
+                <div class="text-xs text-white mt-2">Max: ₹<span id="max-price-display">10000</span></div>
+                <input type="range" name="max_price" id="max_price" min="1000" max="10000" value="10000" step="100" class="w-full accent-cyan-400">
+            </div>
 
-    <div>
-        <label class="block font-medium">Room Type:</label>
-        <select name="room_type" class="w-full p-2 border rounded-md">
-            <option value="">Any</option>
-            <option value="AC">AC</option>
-            <option value="NON-AC">Non-AC</option>
-        </select>
-    </div>
+            <!-- Room Type -->
+            <div>
+                <label class="block text-sm font-semibold text-white mb-1">Room Type</label>
+                <select name="room_type" class="w-full p-2 rounded-lg text-black text-sm">
+                    <option value="">Any</option>
+                    <option value="AC">AC</option>
+                    <option value="NON-AC">Non-AC</option>
+                </select>
+            </div>
 
-    <div class="md:col-span-2">
-        <label class="block font-medium">Price Range:</label>
-        <div class="flex items-center gap-4">
-            <span>Min: ₹<span id="min-price-display">1000</span></span>
-            <input type="range" name="min_price" id="min_price" min="1000" max="10000" value="1000" step="100" class="w-full" />
+            <!-- Features -->
+            <div>
+                <label class="block text-white font-semibold text-white mb-1">Needed Access</label>
+                <div class="space-y-1 text-sm text-white">
+                    <label class="flex items-center"><input type="checkbox" name="features" value="food" class="mr-2"> Food</label>
+                    <label class="flex items-center"><input type="checkbox" name="features" value="wifi" class="mr-2"> Wi-Fi</label>
+                    <label class="flex items-center"><input type="checkbox" name="features" value="pool" class="mr-2"> Pool</label>
+                </div>
+            </div>
         </div>
-        <div class="flex items-center gap-4 mt-2">
-            <span>Max: ₹<span id="max-price-display">10000</span></span>
-            <input type="range" name="max_price" id="max_price" min="1000" max="10000" value="10000" step="100" class="w-full" />
-        </div>
-    </div>
 
-    <div class="md:col-span-2">
-        <label class="block font-medium">Needed Access:</label>
-        <div class="flex flex-wrap gap-4 mt-1">
-            <label><input type="checkbox" name="features" value="food" /> Food</label>
-            <label><input type="checkbox" name="features" value="wifi" /> Wi-Fi</label>
-            <label><input type="checkbox" name="features" value="pool" /> Pool</label>
-        </div>
-    </div>
+        <!-- Search Inputs -->
+        <div class="w-full lg:w-3/4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div class="flex items-center border border-cyan-300 rounded-lg px-3 py-2 bg-white/10">
+                <span class="text-cyan-300 mr-2">📅</span>
+                <input type="date" name="checkin" id="checkin" class="w-full focus:outline-none bg-transparent text-white" required />
+            </div>
+            
+            <div class="flex items-center border border-cyan-300 rounded-lg px-3 py-2 bg-white/10">
+                <span class="text-cyan-300 mr-2">📅</span>
+                <input type="date" name="checkout" id="checkout" class="w-full focus:outline-none bg-transparent text-white" required />
+            </div>
 
-    <div class="md:col-span-3 text-center">
-        <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">🔎 Search</button>
-    </div>
-</form>
+            <div class="flex items-center border border-cyan-300 rounded-lg px-3 py-2 bg-white/10">
+                <span class="text-cyan-300 mr-2">🔍</span>
+                <input type="text" name="search" placeholder="Hotel name or location" class="w-full bg-transparent focus:outline-none text-white" />
+            </div>
+
+            <div class="flex items-center border border-cyan-300 rounded-lg px-3 py-2 bg-white/10">
+                <span class="text-cyan-300 mr-2">👥</span>
+                <input type="number" name="guests" placeholder="Guests" min="1" class="w-full bg-transparent focus:outline-none text-white" required />
+            </div>
+
+            <div class="flex items-center border border-cyan-300 rounded-lg px-3 py-2 bg-white/10 md:col-span-2">
+                <span class="text-cyan-300 mr-2">🛏️</span>
+                <input type="number" name="rooms" placeholder="Rooms" min="1" class="w-full bg-transparent focus:outline-none text-white" required />
+            </div>
+
+            <div class="text-center md:col-span-2">
+                <button type="submit" class="px-8 py-2 bg-cyan-400 hover:bg-cyan-500 text-white font-semibold rounded-2xl shadow-lg transition-all">
+                    🔎 Search
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
 {% endblock %}
 
 {% block content %}
-<section class="px-4 md:px-10">
-    <h2 class="text-2xl font-bold mb-4">Available Hotels</h2>
+<section class="px-4 md:px-10 py-12 bg-gradient-to-br from-blue-900 to-blue-700 min-h-screen">
+    <h2 class="text-3xl font-bold text-white mb-8 text-center">Available Hotels</h2>
+
     {% if hotels %}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for hotel in hotels %}
-            <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                <img src="{{ url_for('static', filename='images/' ~ hotel[1] ~ '.png') }}"
-                     alt="{{ hotel[1] }}"
-                     onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/default.png') }}';"
-                     class="w-full h-48 object-cover">
-                <div class="p-4">
-                    <h3 class="text-lg font-semibold">
-                        <a href="{{ url_for('hotel_detail', hotel_id=hotel[0]) }}" class="text-blue-600 hover:underline">
-                            {{ hotel[1] }}
-                        </a>
-                    </h3>
-                    <p class="text-gray-600">{{ hotel[2] }}</p>
-                </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {% for hotel in hotels %}
+        <div class="bg-white/10 backdrop-blur-md rounded-3xl overflow-hidden shadow-2xl hover:shadow-cyan-400 transition-all">
+            <img src="{{ url_for('static', filename='images/' ~ hotel[1] ~ '.png') }}"
+                 alt="{{ hotel[1] }}"
+                 onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/default.png') }}';"
+                 class="w-full h-48 object-cover">
+            <div class="p-6 space-y-2">
+                <h3 class="text-xl font-bold text-white">
+                    <a href="{{ url_for('hotel_detail', hotel_id=hotel[0]) }}" class="hover:underline">
+                        {{ hotel[1] }}
+                    </a>
+                </h3>
+                <p class="text-cyan-100 text-sm">{{ hotel[2] }}</p>
             </div>
-            {% endfor %}
         </div>
+        {% endfor %}
+    </div>    
     {% else %}
-        <p class="text-gray-500">No hotels match your search criteria.</p>
+        <p class="text-white text-center mt-20 text-lg">No hotels match your search criteria.</p>
     {% endif %}
 </section>
 
+<!-- Form and Slider Validation Scripts -->
 <script>
     const today = new Date().toISOString().split('T')[0];
     document.getElementById("checkin").setAttribute('min', today);
