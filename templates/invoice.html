@@ -57,6 +57,21 @@
             font-size: 14px;
             color: #777;
         }
+        .download-btn {
+            display: block;
+            width: fit-content;
+            margin: 30px auto 10px;
+            padding: 10px 20px;
+            background: linear-gradient(to right, #00c6ff, #0072ff);
+            color: white;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: 0.3s ease;
+        }
+        .download-btn:hover {
+            background: linear-gradient(to right, #0072ff, #00c6ff);
+        }
     </style>
 </head>
 <body>
@@ -65,20 +80,34 @@
     <div class="header">
         <h1>Hotel Booking Invoice</h1>
     </div>
+
     <div class="details">
         <h2>Booking Details</h2>
-        <div class="row"><span class="label">Name:</span> <span>{{ booking[1] }}</span></div>
-        <div class="row"><span class="label">Email:</span> <span>{{ booking[2] }}</span></div>
-        <div class="row"><span class="label">Phone:</span> <span>{{ booking[7] }}</span></div>
-        <div class="row"><span class="label">Govt. ID:</span> <span>{{ booking[9] }}</span></div>
-        <div class="row"><span class="label">Guests:</span> <span>{{ booking[8] }}</span></div>
+        <div class="row"><span class="label">Name:</span> <span>{{ booking.name }}</span></div>
+        <div class="row"><span class="label">Email:</span> <span>{{ booking.email }}</span></div>
+        <div class="row"><span class="label">Phone:</span> <span>{{ booking.phone }}</span></div>
+        <div class="row"><span class="label">Govt. ID:</span> <span>{{ booking.govt_id }}</span></div>
+        <div class="row"><span class="label">Guests:</span> <span>{{ booking.guest_count }}</span></div>
 
         <h2>Hotel Info</h2>
-        <div class="row"><span class="label">Hotel Name:</span> <span>{{ booking[6] }}</span></div>
-        <div class="row"><span class="label">Check-in:</span> <span>{{ booking[3] }}</span></div>
-        <div class="row"><span class="label">Check-out:</span> <span>{{ booking[4] }}</span></div>
-        <div class="row"><span class="label">Total Price:</span> <span>₹{{ booking[5] }}</span></div>
+        <div class="row"><span class="label">Hotel Name:</span> <span>{{ booking.hotel_name }}</span></div>
+        <div class="row"><span class="label">Check-in:</span> <span>{{ booking.checkin }}</span></div>
+        <div class="row"><span class="label">Check-out:</span> <span>{{ booking.checkout }}</span></div>
+        <div class="row"><span class="label">Nights:</span> <span>{{ price.nights }}</span></div>
+
+        <h2>Pricing Breakdown</h2>
+        <div class="row"><span class="label">Room Price ({{ price.price_per_night }} × {{ price.nights }} nights):</span> <span>₹{{ price.room_total }}</span></div>
+        <div class="row"><span class="label">Meal Plan:</span> <span>{{ price.meal_plan }}</span></div>
+        <div class="row"><span class="label">Meal Charges:</span> <span>₹{{ price.meal_total }}</span></div>
+        <div class="row"><span class="label">Discount:</span> <span>- ₹{{ price.discount }}</span></div>
+        <div class="row"><span class="label">GST (18%):</span> <span>₹{{ price.gst }}</span></div>
+        <div class="row font-bold"><span class="label">Grand Total:</span> <span>₹{{ price.grand_total }}</span></div>
     </div>
+
+    <a href="{{ url_for('download_invoice', booking_id=booking.booking_id) }}" class="download-btn">
+        Download Invoice PDF
+    </a>
+
     <div class="footer">
         Thank you for booking with us. We hope you have a pleasant stay!
     </div>

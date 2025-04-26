@@ -52,15 +52,21 @@
                 <input type="date" name="checkout" id="checkout" class="w-full focus:outline-none bg-transparent text-white" required />
             </div>
 
-            <div class="flex items-center border border-cyan-300 rounded-lg px-3 py-2 bg-white/10">
+            <div class="flex items-center border border-cyan-300 rounded-lg px-3 py-2 bg-white/10 md:col-span-2">
                 <span class="text-cyan-300 mr-2">🔍</span>
                 <input type="text" name="search" placeholder="Hotel name or location" class="w-full bg-transparent focus:outline-none text-white" />
             </div>
 
             <div class="flex items-center border border-cyan-300 rounded-lg px-3 py-2 bg-white/10">
-                <span class="text-cyan-300 mr-2">👥</span>
-                <input type="number" name="guests" placeholder="Guests" min="1" class="w-full bg-transparent focus:outline-none text-white" required />
+                <span class="text-cyan-300 mr-2">👨‍👩‍👧</span>
+                <input type="number" name="adults" placeholder="Adults" min="1" max="5" class="w-full bg-transparent focus:outline-none text-white" required />
             </div>
+            
+            <div class="flex items-center border border-cyan-300 rounded-lg px-3 py-2 bg-white/10">
+                <span class="text-cyan-300 mr-2">👶</span>
+                <input type="number" name="children" placeholder="Children" min="0" max="5" class="w-full bg-transparent focus:outline-none text-white" />
+            </div>
+            
 
             <div class="flex items-center border border-cyan-300 rounded-lg px-3 py-2 bg-white/10 md:col-span-2">
                 <span class="text-cyan-300 mr-2">🛏️</span>
@@ -77,6 +83,17 @@
 </div>
 {% endblock %}
 
+<section class="text-white text-sm md:text-base mb-6 bg-white/10 backdrop-blur p-4 rounded-xl shadow-md">
+    <h3 class="text-lg font-bold text-cyan-300 mb-2">Pricing Information:</h3>
+    <ul class="list-disc ml-5 space-y-1">
+      <li>Room price is calculated per night.</li>
+      <li>Breakfast: ₹200, Half-board: ₹600, Full-board: ₹1000 per person/day.</li>
+      <li>Children below 5 years get free meals.</li>
+      <li>Discount: 5% for 4+ nights, 10% for 8+ nights.</li>
+      <li>18% GST is applicable on the final amount.</li>
+    </ul>
+  </section>
+  
 {% block content %}
 <section class="px-4 md:px-10 py-12 bg-gradient-to-br from-blue-900 to-blue-700 min-h-screen">
     <h2 class="text-3xl font-bold text-white mb-8 text-center">Available Hotels</h2>

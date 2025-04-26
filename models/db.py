@@ -1,24 +1,17 @@
-import pymysql
-from config import DB_CONFIG  # Make sure this imports correctly from config.py
+
+import mysql.connector
 
 def get_connection():
     try:
-        connection = pymysql.connect(
-            host=DB_CONFIG['host'],
-            user=DB_CONFIG['user'],
-            password=DB_CONFIG['password'],
-            db=DB_CONFIG['db']
+        conn = mysql.connector.connect(
+            host="hoteldb.cf6me2usaddu.ap-south-1.rds.amazonaws.com",
+            user="admin",
+            password="Muthupattan1403",
+            database="hoteldb"
         )
-        return connection
-    except Exception as e:
-        print(f"Error connecting to database: {e}")
+        print("✅ Database connection successful")
+        return conn
+    except mysql.connector.Error as e:
+        print(f"❌ Database connection failed: {e}")
         return None
-
-
-DB_CONFIG = {
-    'host': 'hoteldb.cf6me2usaddu.ap-south-1.rds.amazonaws.com',
-    'user': 'admin',
-    'password': 'Muthupattan1403',
-    'db': 'hoteldb'
-}
 

@@ -13,8 +13,14 @@
       <input name="phone" placeholder="Mobile Number" required class="w-full px-4 py-3 rounded-xl border border-blue-300 bg-blue-700 placeholder-blue-200 text-white focus:ring-2 focus:ring-cyan-400 shadow-inner">
       <input name="govt_id" placeholder="Govt. ID (Aadhaar/PAN/License)" required class="w-full px-4 py-3 rounded-xl border border-blue-300 bg-blue-700 placeholder-blue-200 text-white focus:ring-2 focus:ring-cyan-400 shadow-inner">
 
+      <!-- ✅ Crib Request Option -->
+      <label class="flex items-center space-x-3 mt-2">
+        <input type="checkbox" name="crib_request" class="h-5 w-5 text-cyan-400 focus:ring-cyan-500 border-blue-300 rounded">
+        <span class="text-cyan-200 text-sm">Request a Crib/Additional Bed for Child</span>
+      </label>
+
       <div>
-        <h3 class="text-xl font-semibold text-cyan-200 mt-4 mb-2">Co-customers</h3>
+        <h3 class="text-xl font-semibold text-cyan-200 mt-6 mb-2">Co-customers</h3>
         <div id="co-customers-container" class="space-y-4"></div>
       </div>
 
@@ -65,6 +71,7 @@
     const phone = form.phone.value;
     const govt_id = form.govt_id.value;
     const guestCount = {{ session.get('guest_count', 1) }};
+    const cribRequested = form.crib_request.checked;
 
     let summary = `
       <p><strong>Name:</strong> ${name}</p>
@@ -73,6 +80,12 @@
       <p><strong>Govt ID:</strong> ${govt_id}</p>
       <p><strong>Total Guests:</strong> ${guestCount}</p>
     `;
+
+    if (cribRequested) {
+      summary += `<p><strong>Crib Request:</strong> Yes</p>`;
+    } else {
+      summary += `<p><strong>Crib Request:</strong> No</p>`;
+    }
 
     if (guestCount > 1) {
       for (let i = 1; i < guestCount; i++) {

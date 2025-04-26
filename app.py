@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, send_file
+from flask import Flask, render_template, request, redirect, url_for, send_file, abort
 from models.db import get_connection
 from utils.pdf_generator import generate_invoice_pdf
 import os
@@ -13,10 +13,26 @@ app.secret_key = 'your_secret_key'
 
 @app.route('/')
 def index():
+    # ✅ Automatically make rooms available after checkout
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE rooms
+        SET available = TRUE
+        WHERE id IN (
+            SELECT room_id
+            FROM bookings
+            WHERE checkout < CURDATE()
+        )
+    """)
+    conn.commit()
+
+    # ⬇️ Continue with the existing filtering and fetching
     search = request.args.get('search')
     checkin = request.args.get('checkin')
     checkout = request.args.get('checkout')
-    guests = request.args.get('guests', type=int)
+    adults = request.args.get('adults', type=int)
+    children = request.args.get('children', type=int)
     rooms = request.args.get('rooms', type=int)
     room_type = request.args.get('room_temp')
     min_price = request.args.get('min_price', type=float)
@@ -26,11 +42,25 @@ def index():
     if checkin and checkout:
         session['checkin'] = checkin
         session['checkout'] = checkout
-    if guests:
-        session['guest_count'] = guests
 
-    conn = get_connection()
-    cursor = conn.cursor()
+    total_guests = (adults or 0) + (children or 0)
+
+    # ✅ Occupancy and Age Validations
+    if adults is not None:
+        if adults < 1:
+            flash("At least one adult is required for booking.")
+            return redirect(url_for('index'))
+        if adults > 5:
+            flash("Maximum 5 adults allowed per room.")
+            return redirect(url_for('index'))
+
+    if total_guests > 5:
+        flash("Total guests (adults + children) cannot exceed 5 per room.")
+        return redirect(url_for('index'))
+
+    session['guest_count'] = total_guests
+    session['adults'] = adults
+    session['children'] = children
 
     query = "SELECT DISTINCT h.* FROM hotels h JOIN rooms r ON h.id = r.hotel_id"
     filters = []
@@ -39,13 +69,10 @@ def index():
     if search:
         filters.append("(h.name LIKE %s OR h.location LIKE %s)")
         params.extend([f"%{search}%", f"%{search}%"])
-    if guests:
-        if guests > 5:
-            flash("Maximum 5 guests are allowed per room.")
-            return redirect(url_for('index'))
+    if total_guests:
         filters.append("r.guest_capacity >= %s")
         filters.append("r.guest_capacity <= 5")
-        params.append(guests)
+        params.append(total_guests)
     if rooms:
         filters.append("r.available = TRUE")
     if room_type:
@@ -72,13 +99,14 @@ def index():
     return render_template('index.html', hotels=hotels)
 
 
+
 @app.route('/hotel/<int:hotel_id>')
 def hotel_detail(hotel_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM hotels WHERE id=%s", (hotel_id,))
     hotel = cursor.fetchone()
-    cursor.execute("SELECT * FROM rooms WHERE hotel_id=%s", (hotel_id,))
+    cursor.execute("SELECT * FROM rooms WHERE hotel_id=%s AND available = TRUE", (hotel_id,))
     rooms = cursor.fetchall()
     conn.close()
     return render_template('hotel_detail.html', hotel=hotel, rooms=rooms)
@@ -86,7 +114,19 @@ def hotel_detail(hotel_id):
 @app.route('/book/<int:room_id>', methods=['GET', 'POST'])
 def book_room(room_id):
     if 'user_id' not in session:
+        session['next'] = url_for('book_room', room_id=room_id)
         return redirect(url_for('login'))
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # ✅ Check if room is still available
+    cursor.execute("SELECT available FROM rooms WHERE id = %s", (room_id,))
+    result = cursor.fetchone()
+
+    if not result or result[0] == 0:
+        conn.close()
+        return "Error: Room is no longer available for booking.", 400
 
     if request.method == 'POST':
         name = request.form['name']
@@ -103,12 +143,13 @@ def book_room(room_id):
             checkin_date = datetime.strptime(checkin, "%Y-%m-%d")
             checkout_date = datetime.strptime(checkout, "%Y-%m-%d")
             if checkout_date <= checkin_date:
+                conn.close()
                 return "Error: Check-out date must be after check-in date.", 400
         except Exception as e:
+            conn.close()
             return "Error: Invalid check-in/check-out format", 400
 
-        conn = get_connection()
-        cursor = conn.cursor()
+        # ✅ Insert booking
         cursor.execute("""
         INSERT INTO bookings (room_id, name, email, phone, guest_count, govt_id, checkin, checkout, user_id)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -116,70 +157,135 @@ def book_room(room_id):
         
         booking_id = cursor.lastrowid
 
-        # Save co-customers
+        # ✅ Insert co-customers
         for i in range(1, int(guest_count)):
             co_name = request.form.get(f'co_name_{i}')
             co_age = request.form.get(f'co_age_{i}')
             if co_name and co_age:
-                cursor.execute("INSERT INTO co_customers (booking_id, name, age) VALUES (%s, %s, %s)",
-                               (booking_id, co_name, co_age))
+                cursor.execute(
+                    "INSERT INTO co_customers (booking_id, name, age) VALUES (%s, %s, %s)",
+                    (booking_id, co_name, co_age)
+                )
+
+        # ✅ Mark room unavailable
+        cursor.execute("UPDATE rooms SET available = FALSE WHERE id = %s", (room_id,))
 
         conn.commit()
         conn.close()
 
         return redirect(url_for('invoice', booking_id=booking_id))
 
+    conn.close()
     return render_template('book.html', room_id=room_id)
+
+
+
+@app.route('/download_invoice/<int:booking_id>')
+def download_invoice(booking_id):
+    # (Re)fetch booking info (similar query as above)
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT b.name, b.email, b.phone, b.guest_count,
+               b.checkin, b.checkout, b.govt_id,
+               r.price, h.name
+        FROM bookings b
+        JOIN rooms r ON b.room_id = r.id
+        JOIN hotels h ON r.hotel_id = h.id
+        WHERE b.id = %s
+    """, (booking_id,))
+    booking = cursor.fetchone()
+    conn.close()
+
+    if not booking:
+        return abort(404, description="Booking not found")
+
+    # Generate the PDF file (using fpdf or any library)
+    pdf_path = generate_invoice_pdf(booking, booking_id)
+    if not pdf_path or not os.path.exists(pdf_path):
+        return "Error generating invoice PDF", 500
+
+    # Send the PDF as attachment
+    # The as_attachment flag forces a download prompt (Download).
+    return send_file(pdf_path, as_attachment=True,
+                     download_name=f"invoice_{booking_id}.pdf",
+                     mimetype='application/pdf')
 
 
 @app.route('/invoice/<int:booking_id>')
 def invoice(booking_id):
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT b.name, b.email, b.phone, b.guest_count,
+               b.checkin, b.checkout, b.govt_id,
+               r.price, h.name
+        FROM bookings b
+        JOIN rooms r ON b.room_id = r.id
+        JOIN hotels h ON r.hotel_id = h.id
+        WHERE b.id = %s
+    """, (booking_id,))
+    row = cursor.fetchone()
+    conn.close()
 
-        cursor.execute("""
-            SELECT 
-                b.id,          -- 0: booking ID
-                b.name,        -- 1: customer name
-                b.email,       -- 2
-                b.checkin,     -- 3
-                b.checkout,    -- 4
-                r.price,       -- 5
-                h.name,        -- 6: hotel name
-                b.phone,       -- 7
-                b.guest_count, -- 8
-                b.govt_id      -- 9
-            FROM bookings b
-            JOIN rooms r ON b.room_id = r.id
-            JOIN hotels h ON r.hotel_id = h.id
-            WHERE b.id = %s
-        """, (booking_id,))
-        
-        booking = cursor.fetchone()
-        conn.close()
+    if not row:
+        return "Booking not found", 404
 
-        if not booking or len(booking) < 10:
-            print(f"No booking found or incomplete for ID {booking_id}")
-            return "Booking not found or incomplete", 404
+    # unpack the row
+    (name, email, phone, guests, checkin_str, checkout_str, govt_id, price_per_night, hotel_name) = row
 
-        # Log booking data for debugging
-        print("Fetched booking info:", booking)
+    checkin_date = checkin_str
+    checkout_date = checkout_str
+    nights = (checkout_date - checkin_date).days
+    if nights < 1:
+        nights = 1
 
-        # Generate PDF
-        from utils.pdf_generator import generate_invoice_pdf  # Make sure this import works
-        pdf_path = generate_invoice_pdf(booking, booking_id)
+    room_total = price_per_night * nights
+    meal_price_per_person_per_day = 1000
+    meal_total = guests * meal_price_per_person_per_day * nights
 
-        if not pdf_path or not os.path.exists(pdf_path):
-            print(f"PDF not created at path: {pdf_path}")
-            return "Error generating the invoice.", 500
+    discount_percent = 0
+    if nights > 7:
+        discount_percent = 10
+    elif nights > 3:
+        discount_percent = 5
 
-        print(f"Sending PDF invoice: {pdf_path}")
-        return send_file(pdf_path, as_attachment=True)
+    discount_amount = (float(room_total) + float(meal_total)) * discount_percent / 100
+    room_total = float(room_total)
+    meal_total = float(meal_total)
+    discount_amount = float(discount_amount)
 
-    except Exception as e:
-        print(f"Error generating invoice route: {e}")
-        return f"Error generating the invoice: {e}", 500
+    subtotal = room_total + meal_total - discount_amount
+    gst = subtotal * 0.18
+    grand_total = subtotal + gst
+
+    booking = {
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'guest_count': guests,
+        'checkin': checkin_str,
+        'checkout': checkout_str,
+        'govt_id': govt_id,
+        'hotel_name': hotel_name,
+        'booking_id': booking_id
+    }
+
+    price = {
+        'nights': nights,
+        'price_per_night': float(price_per_night),
+        'room_total': room_total,
+        'meal_plan': 'Full-board',
+        'meal_total': meal_total,
+        'discount': discount_amount,
+        'gst': gst,
+        'grand_total': grand_total
+    }
+
+    return render_template('invoice.html', booking=booking, price=price)
+
+
+
 
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -213,9 +319,17 @@ def login():
         if user and check_password_hash(user[2], password):
             session['user_id'] = user[0]
             session['username'] = user[1]
-            return redirect(url_for('index'))
+
+            # ✅ Redirect to next page if available
+            next_page = session.pop('next', None)
+            if next_page:
+                return redirect(next_page)
+            else:
+                return redirect(url_for('index'))
+
         return "Invalid credentials"
     return render_template('login.html')
+
 
 @app.route('/logout')
 def logout():
