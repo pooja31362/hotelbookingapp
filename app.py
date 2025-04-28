@@ -405,5 +405,6 @@ def cancel_booking(booking_id):
 
     flash("Booking cancelled successfully.")
     return redirect(url_for('booking_history'))
+    
 if __name__ == '__main__':
     app.run(debug=True)
