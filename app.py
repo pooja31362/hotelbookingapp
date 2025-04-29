@@ -5,7 +5,6 @@ import os
 from flask import session
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime,date, timedelta
-from flask import flash
 from flask import flash, redirect, url_for
 
 app = Flask(__name__)
@@ -13,7 +12,6 @@ app.secret_key = 'your_secret_key'
 
 @app.route('/')
 def index():
-    # ✅ Automatically make rooms available after checkout
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -27,7 +25,6 @@ def index():
     """)
     conn.commit()
 
-    # ⬇️ Continue with the existing filtering and fetching
     search = request.args.get('search')
     checkin = request.args.get('checkin')
     checkout = request.args.get('checkout')
@@ -45,7 +42,6 @@ def index():
 
     total_guests = (adults or 0) + (children or 0)
 
-    # ✅ Occupancy and Age Validations
     if adults is not None:
         if adults < 1:
             flash("At least one adult is required for booking.")
@@ -61,6 +57,7 @@ def index():
     session['guest_count'] = total_guests
     session['adults'] = adults
     session['children'] = children
+    session['rooms'] = rooms  # ✅ Added this line
 
     query = "SELECT DISTINCT h.* FROM hotels h JOIN rooms r ON h.id = r.hotel_id"
     filters = []
@@ -98,16 +95,34 @@ def index():
 
     return render_template('index.html', hotels=hotels)
 
-
-
 @app.route('/hotel/<int:hotel_id>')
 def hotel_detail(hotel_id):
     conn = get_connection()
     cursor = conn.cursor()
+
+    checkin = session.get('checkin')
+    checkout = session.get('checkout')
+
+    if not checkin or not checkout:
+        flash("Please select check-in and check-out dates first!")
+        return redirect(url_for('index'))
+
     cursor.execute("SELECT * FROM hotels WHERE id=%s", (hotel_id,))
     hotel = cursor.fetchone()
-    cursor.execute("SELECT * FROM rooms WHERE hotel_id=%s AND available = TRUE", (hotel_id,))
+
+    cursor.execute("""
+        SELECT r.*, 
+            (r.total_rooms - IFNULL((
+                SELECT SUM(b.rooms_booked)
+                FROM bookings b
+                WHERE b.room_id = r.id
+                AND NOT (b.checkout <= %s OR b.checkin >= %s)
+            ), 0)) AS available_rooms_today
+        FROM rooms r
+        WHERE r.hotel_id = %s
+    """, (checkin, checkout, hotel_id))
     rooms = cursor.fetchall()
+
     conn.close()
     return render_template('hotel_detail.html', hotel=hotel, rooms=rooms)
 
@@ -120,44 +135,59 @@ def book_room(room_id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    # ✅ Check if room is still available
-    cursor.execute("SELECT available FROM rooms WHERE id = %s", (room_id,))
-    result = cursor.fetchone()
+    # ✅ Get hotel_id and total_rooms related to this room
+    cursor.execute("SELECT hotel_id, total_rooms FROM rooms WHERE id = %s", (room_id,))
+    room_info = cursor.fetchone()
 
-    if not result or result[0] == 0:
+    if not room_info:
         conn.close()
-        return "Error: Room is no longer available for booking.", 400
+        flash("Room not found.")
+        return redirect(url_for('index'))
+
+    hotel_id = room_info[0]
+    total_rooms = room_info[1]
 
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email']
         phone = request.form['phone']
         govt_id = request.form['govt_id']
+        crib_request = bool(request.form.get('crib_request'))
 
         checkin = session.get('checkin')
         checkout = session.get('checkout')
         guest_count = session.get('guest_count', 1)
+        rooms_requested = session.get('rooms', 1)
 
-        # ✅ Date format check
         try:
             checkin_date = datetime.strptime(checkin, "%Y-%m-%d")
             checkout_date = datetime.strptime(checkout, "%Y-%m-%d")
             if checkout_date <= checkin_date:
                 conn.close()
                 return "Error: Check-out date must be after check-in date.", 400
-        except Exception as e:
+        except Exception:
             conn.close()
             return "Error: Invalid check-in/check-out format", 400
 
-        # ✅ Insert booking
         cursor.execute("""
-        INSERT INTO bookings (room_id, name, email, phone, guest_count, govt_id, checkin, checkout, user_id)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (room_id, name, email, phone, guest_count, govt_id, checkin, checkout, session['user_id']))
-        
+            SELECT SUM(rooms_booked) FROM bookings
+            WHERE room_id = %s
+            AND NOT (checkout <= %s OR checkin >= %s)
+        """, (room_id, checkin, checkout))
+        booked_rooms = cursor.fetchone()[0] or 0
+
+        if (booked_rooms + rooms_requested) > total_rooms:
+            conn.close()
+            flash("❌ Sorry, this room is currently unavailable for booking on selected dates!")
+            return redirect(url_for('hotel_detail', hotel_id=hotel_id))
+
+        cursor.execute("""
+        INSERT INTO bookings (room_id, name, email, phone, guest_count, govt_id, crib_request, checkin, checkout, user_id, rooms_booked)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (room_id, name, email, phone, guest_count, govt_id, crib_request, checkin, checkout, session['user_id'], rooms_requested))
+
         booking_id = cursor.lastrowid
 
-        # ✅ Insert co-customers
         for i in range(1, int(guest_count)):
             co_name = request.form.get(f'co_name_{i}')
             co_age = request.form.get(f'co_age_{i}')
@@ -167,9 +197,6 @@ def book_room(room_id):
                     (booking_id, co_name, co_age)
                 )
 
-        # ✅ Mark room unavailable
-        cursor.execute("UPDATE rooms SET available = FALSE WHERE id = %s", (room_id,))
-
         conn.commit()
         conn.close()
 
@@ -177,8 +204,6 @@ def book_room(room_id):
 
     conn.close()
     return render_template('book.html', room_id=room_id)
-
-
 
 @app.route('/download_invoice/<int:booking_id>')
 def download_invoice(booking_id):
@@ -301,7 +326,9 @@ def signup():
                        (username, email, password))
         conn.commit()
         conn.close()
+        flash("Signup Successful! Please login.", "success")
         return redirect(url_for('login'))
+
     return render_template('signup.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -327,7 +354,9 @@ def login():
             else:
                 return redirect(url_for('index'))
 
-        return "Invalid credentials"
+        flash("Invalid email or password!", "error")
+        return redirect(url_for('login'))
+
     return render_template('login.html')
 
 

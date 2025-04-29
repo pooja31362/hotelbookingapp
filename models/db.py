@@ -7,7 +7,7 @@ def get_connection():
             host="hoteldb.cf6me2usaddu.ap-south-1.rds.amazonaws.com",
             user="admin",
             password="Muthupattan1403",
-            database="hoteldb"
+            database="poojudb"
         )
         print("✅ Database connection successful")
         return conn
