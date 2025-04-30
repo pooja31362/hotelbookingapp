@@ -123,8 +123,10 @@ def hotel_detail(hotel_id):
     """, (checkin, checkout, hotel_id))
     rooms = cursor.fetchall()
 
+    features = request.args.getlist("features")  
     conn.close()
-    return render_template('hotel_detail.html', hotel=hotel, rooms=rooms)
+
+    return render_template('hotel_detail.html', hotel=hotel, rooms=rooms, features=features)
 
 @app.route('/book/<int:room_id>', methods=['GET', 'POST'])
 def book_room(room_id):
@@ -153,7 +155,9 @@ def book_room(room_id):
         phone = request.form['phone']
         govt_id = request.form['govt_id']
         crib_request = bool(request.form.get('crib_request'))
-
+        selected_features = request.form.getlist('features')
+        features_string = ",".join(selected_features) if selected_features else "None"
+        
         checkin = session.get('checkin')
         checkout = session.get('checkout')
         guest_count = session.get('guest_count', 1)
@@ -182,10 +186,10 @@ def book_room(room_id):
             return redirect(url_for('hotel_detail', hotel_id=hotel_id))
 
         cursor.execute("""
-        INSERT INTO bookings (room_id, name, email, phone, guest_count, govt_id, crib_request, checkin, checkout, user_id, rooms_booked)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (room_id, name, email, phone, guest_count, govt_id, crib_request, checkin, checkout, session['user_id'], rooms_requested))
-
+        INSERT INTO bookings (room_id, name, email, phone, guest_count,govt_id, crib_request, checkin, checkout,user_id, rooms_booked, features)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (room_id, name, email, phone, guest_count,govt_id, crib_request, checkin, checkout,session['user_id'], rooms_requested, features_string))
+        
         booking_id = cursor.lastrowid
 
         for i in range(1, int(guest_count)):
@@ -202,8 +206,11 @@ def book_room(room_id):
 
         return redirect(url_for('invoice', booking_id=booking_id))
 
+    features = request.args.getlist("features")
     conn.close()
-    return render_template('book.html', room_id=room_id)
+
+    return render_template('book.html', room_id=room_id, features=features)
+
 
 @app.route('/download_invoice/<int:booking_id>')
 def download_invoice(booking_id):
@@ -243,13 +250,14 @@ def invoice(booking_id):
     cursor = conn.cursor()
     cursor.execute("""
         SELECT b.name, b.email, b.phone, b.guest_count,
-               b.checkin, b.checkout, b.govt_id,
-               r.price, h.name
+                b.checkin, b.checkout, b.govt_id, b.features,
+                r.price, h.name
         FROM bookings b
         JOIN rooms r ON b.room_id = r.id
         JOIN hotels h ON r.hotel_id = h.id
         WHERE b.id = %s
-    """, (booking_id,))
+        """, (booking_id,))
+
     row = cursor.fetchone()
     conn.close()
 
@@ -257,7 +265,7 @@ def invoice(booking_id):
         return "Booking not found", 404
 
     # unpack the row
-    (name, email, phone, guests, checkin_str, checkout_str, govt_id, price_per_night, hotel_name) = row
+    (name, email, phone, guests, checkin_str, checkout_str, govt_id, features, price_per_night, hotel_name) = row
 
     checkin_date = checkin_str
     checkout_date = checkout_str
@@ -292,6 +300,7 @@ def invoice(booking_id):
         'checkin': checkin_str,
         'checkout': checkout_str,
         'govt_id': govt_id,
+        'features': features,  
         'hotel_name': hotel_name,
         'booking_id': booking_id
     }

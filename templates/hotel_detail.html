@@ -113,10 +113,13 @@
       <div class="room-box">
         <p><strong>Type:</strong> {{ room[2] }} | <strong>Price:</strong> ₹{{ room[3] }}</p>
         {% if room[-1] > 0 %}
-            <a href="{{ url_for('book_room', room_id=room[0]) }}" class="book-button">Book Now</a>
+        <a href="{{ url_for('book_room', room_id=room[0]) }}{% for f in request.args.getlist('features') %}{% if loop.first %}?{% else %}&{% endif %}features={{ f }}{% endfor %}" class="book-button">
+          Book Now
+        </a>        
         {% else %}
             <button class="book-button opacity-50 cursor-not-allowed" disabled>No Rooms</button>
         {% endif %}
+        
       </div>
       {% endfor %}
     </div>

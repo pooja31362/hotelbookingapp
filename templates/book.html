@@ -36,7 +36,10 @@
         <h3 class="text-xl font-semibold text-cyan-200 mt-6 mb-2">Co-customers</h3>
         <div id="co-customers-container" class="space-y-4"></div>
       </div>
- 
+      {% for feature in features %}
+        <input type="hidden" name="features" value="{{ feature }}">
+      {% endfor %}
+
       <div class="text-center pt-4">
         <button type="button" onclick="handleConfirmBooking()" class="px-6 py-3 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 text-white font-semibold rounded-xl transition duration-300 shadow-lg">
           Confirm Booking
